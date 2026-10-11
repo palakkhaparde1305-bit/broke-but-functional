@@ -1,19 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { FinanceProvider, useFinance } from './context/FinanceContext';
 import { Navbar } from './components/Navbar';
 import { DayController } from './components/DayController';
 import { DashboardHUD } from './components/DashboardHUD';
-import { DecisionSimulator } from './components/DecisionSimulator';
 import { CommitmentsManager } from './components/CommitmentsManager';
 import { SavingsLockbox } from './components/SavingsLockbox';
 import { HealthScoreCard } from './components/HealthScoreCard';
 import { RunwayChart } from './components/RunwayChart';
-import { LifeEventsModal } from './components/LifeEventsModal';
-import { AddTransactionModal } from './components/AddTransactionModal';
 import { TransactionHistory } from './components/TransactionHistory';
-import { SurvivalCertificateModal } from './components/SurvivalCertificateModal';
 import { BudgetBreakdownCard } from './components/BudgetBreakdownCard';
-import { Sparkles, Trophy, HelpCircle, ShieldCheck } from 'lucide-react';
+import { AriaLiveAnnouncer } from './components/AriaLiveAnnouncer';
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+
+// Code-split modals for optimal First Contentful Paint and bundle size
+const DecisionSimulator = lazy(() =>
+  import('./components/DecisionSimulator').then((m) => ({ default: m.DecisionSimulator }))
+);
+const AddTransactionModal = lazy(() =>
+  import('./components/AddTransactionModal').then((m) => ({ default: m.AddTransactionModal }))
+);
+const LifeEventsModal = lazy(() =>
+  import('./components/LifeEventsModal').then((m) => ({ default: m.LifeEventsModal }))
+);
+const SurvivalCertificateModal = lazy(() =>
+  import('./components/SurvivalCertificateModal').then((m) => ({ default: m.SurvivalCertificateModal }))
+);
 
 const DashboardContent: React.FC = () => {
   const isPreviewSim = typeof window !== 'undefined' && window.location.search.includes('simulator');
@@ -23,7 +34,7 @@ const DashboardContent: React.FC = () => {
   const [isSimulatorOpen, setIsSimulatorOpen] = useState(isPreviewSim);
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
   const [isAddIncomeOpen, setIsAddIncomeOpen] = useState(false);
-  const { summary, triggerRandomLifeEvent, setDay, advanceDay } = useFinance();
+  const { triggerRandomLifeEvent, setDay, advanceDay } = useFinance();
 
   React.useEffect(() => {
     if (isPreviewRoulette) {
@@ -32,32 +43,15 @@ const DashboardContent: React.FC = () => {
     if (isPreviewCert) {
       setDay(30);
     }
-  }, [isPreviewRoulette, isPreviewCert]);
+  }, [isPreviewRoulette, isPreviewCert, triggerRandomLifeEvent, setDay]);
 
-  // Global Keyboard Navigation Shortcuts
-  React.useEffect(() => {
-    const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      const activeTag = (document.activeElement as HTMLElement)?.tagName;
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(activeTag)) return;
-
-      if (e.key === 's' || e.key === 'S') {
-        e.preventDefault();
-        setIsSimulatorOpen((prev) => !prev);
-      } else if (e.key === 'e' || e.key === 'E') {
-        e.preventDefault();
-        setIsAddExpenseOpen(true);
-      } else if (e.key === 'i' || e.key === 'I') {
-        e.preventDefault();
-        setIsAddIncomeOpen(true);
-      } else if (e.key === 'n' || e.key === 'N') {
-        e.preventDefault();
-        advanceDay();
-      }
-    };
-
-    window.addEventListener('keydown', handleGlobalKeyDown);
-    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [advanceDay]);
+  // Global Keyboard Navigation Shortcuts (Decoupled Custom Hook)
+  useKeyboardShortcuts({
+    onToggleSimulator: () => setIsSimulatorOpen((prev) => !prev),
+    onOpenExpense: () => setIsAddExpenseOpen(true),
+    onOpenIncome: () => setIsAddIncomeOpen(true),
+    onAdvanceDay: advanceDay
+  });
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-lime-400 selection:text-slate-950">
@@ -68,6 +62,9 @@ const DashboardContent: React.FC = () => {
       >
         Skip to main content
       </a>
+
+      {/* Screen-reader live status announcer */}
+      <AriaLiveAnnouncer />
 
       {/* Navbar */}
       <Navbar />
@@ -94,13 +91,15 @@ const DashboardContent: React.FC = () => {
         <BudgetBreakdownCard />
 
         {/* Split Grid: Commitments Manager & Savings Lockbox */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 content-auto">
           <CommitmentsManager />
           <SavingsLockbox />
         </div>
 
         {/* Transaction History & Audit Ledger */}
-        <TransactionHistory />
+        <div className="content-auto">
+          <TransactionHistory />
+        </div>
       </main>
 
       {/* Footer */}
@@ -118,27 +117,35 @@ const DashboardContent: React.FC = () => {
         </div>
       </footer>
 
-      {/* Modals */}
-      <DecisionSimulator
-        isOpen={isSimulatorOpen}
-        onClose={() => setIsSimulatorOpen(false)}
-      />
+      {/* Code-Split Lazy Modals in Suspense */}
+      <Suspense fallback={null}>
+        {isSimulatorOpen && (
+          <DecisionSimulator
+            isOpen={isSimulatorOpen}
+            onClose={() => setIsSimulatorOpen(false)}
+          />
+        )}
 
-      <AddTransactionModal
-        isOpen={isAddExpenseOpen}
-        onClose={() => setIsAddExpenseOpen(false)}
-        defaultType="expense"
-      />
+        {isAddExpenseOpen && (
+          <AddTransactionModal
+            isOpen={isAddExpenseOpen}
+            onClose={() => setIsAddExpenseOpen(false)}
+            defaultType="expense"
+          />
+        )}
 
-      <AddTransactionModal
-        isOpen={isAddIncomeOpen}
-        onClose={() => setIsAddIncomeOpen(false)}
-        defaultType="income"
-      />
+        {isAddIncomeOpen && (
+          <AddTransactionModal
+            isOpen={isAddIncomeOpen}
+            onClose={() => setIsAddIncomeOpen(false)}
+            defaultType="income"
+          />
+        )}
 
-      <LifeEventsModal />
+        <LifeEventsModal />
 
-      <SurvivalCertificateModal />
+        <SurvivalCertificateModal />
+      </Suspense>
     </div>
   );
 };

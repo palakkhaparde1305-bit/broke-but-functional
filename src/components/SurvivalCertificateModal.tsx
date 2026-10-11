@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from 'react';
 import { useFinance } from '../context/FinanceContext';
-import confetti from 'canvas-confetti';
 import {
   Trophy,
   Award,
@@ -23,15 +22,18 @@ export const SurvivalCertificateModal: React.FC = () => {
   useEffect(() => {
     if (hasFinishedMonth && !confettiTriggered.current) {
       confettiTriggered.current = true;
-      try {
-        confetti({
-          particleCount: 120,
-          spread: 80,
-          origin: { y: 0.6 }
+      import('canvas-confetti')
+        .then((module) => {
+          const confetti = module.default;
+          confetti({
+            particleCount: 120,
+            spread: 80,
+            origin: { y: 0.6 }
+          });
+        })
+        .catch(() => {
+          // Confetti fallback
         });
-      } catch {
-        // Confetti fallback
-      }
     }
     if (!hasFinishedMonth) {
       confettiTriggered.current = false;

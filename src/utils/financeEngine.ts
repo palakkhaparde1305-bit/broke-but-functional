@@ -8,6 +8,11 @@ import {
   HealthScoreAnalysis,
   PillarScore
 } from '../types/finance';
+import {
+  TOTAL_SIMULATION_DAYS,
+  HEALTH_WEIGHTS,
+  EMERGENCY_SHOCK_AMOUNT
+} from '../constants/finance';
 
 export interface FinanceSummary {
   currentDay: number;
@@ -40,7 +45,7 @@ export function computeFinanceSummary(
   commitments: Commitment[],
   savingsGoals: SavingsGoal[]
 ): FinanceSummary {
-  const remainingDays = Math.max(1, 30 - currentDay + 1);
+  const remainingDays = Math.max(1, TOTAL_SIMULATION_DAYS - currentDay + 1);
 
   // Sum transactions up to currentDay
   let totalSpent = 0;
@@ -291,11 +296,11 @@ export function computeHealthScoreAnalysis(
 
   // Weighted overall composite score
   const overallScore = Math.round(
-    liquidityScore * 0.3 +
-    commitmentScore * 0.25 +
-    savingsScore * 0.2 +
-    disciplineScore * 0.15 +
-    resilienceScore * 0.1
+    liquidityScore * HEALTH_WEIGHTS.LIQUIDITY_RUNWAY +
+    commitmentScore * HEALTH_WEIGHTS.OBLIGATIONS_SHIELD +
+    savingsScore * HEALTH_WEIGHTS.SAVINGS_LOCKBOX +
+    disciplineScore * HEALTH_WEIGHTS.BURN_DISCIPLINE +
+    resilienceScore * HEALTH_WEIGHTS.SHOCK_RESILIENCE
   );
 
   let grade: 'S' | 'A' | 'B' | 'C' | 'D' | 'F' = 'C';

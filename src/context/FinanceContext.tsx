@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Transaction,
   Commitment,
@@ -114,7 +114,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [summary, transactions, commitments]);
 
   // Advance day by 1
-  const advanceDay = () => {
+  const advanceDay = useCallback(() => {
     if (currentDay >= 30) {
       setHasFinishedMonth(true);
       playAudio.success(isAudioMuted);
@@ -162,18 +162,18 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setHasFinishedMonth(true);
       playAudio.success(isAudioMuted);
     }
-  };
+  }, [currentDay, isAudioMuted, commitments, lifeEvents]);
 
-  const setDay = (targetDay: number) => {
+  const setDay = useCallback((targetDay: number) => {
     const clamped = Math.min(30, Math.max(1, targetDay));
     setCurrentDay(clamped);
     playAudio.click(isAudioMuted);
     if (clamped === 30) {
       setHasFinishedMonth(true);
     }
-  };
+  }, [isAudioMuted]);
 
-  const addTransaction = (tx: Omit<Transaction, 'id' | 'timestamp'>) => {
+  const addTransaction = useCallback((tx: Omit<Transaction, 'id' | 'timestamp'>) => {
     const newTx: Transaction = {
       ...tx,
       id: 'tx-' + Date.now(),
@@ -185,14 +185,14 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } else {
       playAudio.coin(isAudioMuted);
     }
-  };
+  }, [isAudioMuted]);
 
-  const deleteTransaction = (id: string) => {
+  const deleteTransaction = useCallback((id: string) => {
     setTransactions((prev) => prev.filter((t) => t.id !== id));
     playAudio.click(isAudioMuted);
-  };
+  }, [isAudioMuted]);
 
-  const toggleCommitmentPaid = (id: string) => {
+  const toggleCommitmentPaid = useCallback((id: string) => {
     setCommitments((prev) =>
       prev.map((c) => {
         if (c.id === id) {
@@ -207,25 +207,25 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return c;
       })
     );
-  };
+  }, [isAudioMuted]);
 
-  const skipCommitment = (id: string) => {
+  const skipCommitment = useCallback((id: string) => {
     setCommitments((prev) =>
       prev.map((c) => (c.id === id ? { ...c, status: 'skipped' } : c))
     );
     playAudio.warning(isAudioMuted);
-  };
+  }, [isAudioMuted]);
 
-  const addCommitment = (c: Omit<Commitment, 'id'>) => {
+  const addCommitment = useCallback((c: Omit<Commitment, 'id'>) => {
     const newComm: Commitment = {
       ...c,
       id: 'comm-' + Date.now()
     };
     setCommitments((prev) => [...prev, newComm]);
     playAudio.coin(isAudioMuted);
-  };
+  }, [isAudioMuted]);
 
-  const addSavingsGoal = (g: Omit<SavingsGoal, 'id' | 'currentSaved'>) => {
+  const addSavingsGoal = useCallback((g: Omit<SavingsGoal, 'id' | 'currentSaved'>) => {
     const newGoal: SavingsGoal = {
       ...g,
       id: 'goal-' + Date.now(),
@@ -233,17 +233,17 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
     setSavingsGoals((prev) => [...prev, newGoal]);
     playAudio.coin(isAudioMuted);
-  };
+  }, [isAudioMuted]);
 
-  const depositToSavings = (goalId: string, amount: number) => {
+  const depositToSavings = useCallback((goalId: string, amount: number) => {
     if (amount <= 0 || amount > summary.balance) return;
     setSavingsGoals((prev) =>
       prev.map((g) => (g.id === goalId ? { ...g, currentSaved: g.currentSaved + amount } : g))
     );
     playAudio.coin(isAudioMuted);
-  };
+  }, [summary.balance, isAudioMuted]);
 
-  const withdrawFromSavings = (goalId: string, amount: number) => {
+  const withdrawFromSavings = useCallback((goalId: string, amount: number) => {
     setSavingsGoals((prev) =>
       prev.map((g) => {
         if (g.id === goalId) {
@@ -254,16 +254,16 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       })
     );
     playAudio.coin(isAudioMuted);
-  };
+  }, [isAudioMuted]);
 
-  const toggleGoalLock = (goalId: string) => {
+  const toggleGoalLock = useCallback((goalId: string) => {
     setSavingsGoals((prev) =>
       prev.map((g) => (g.id === goalId ? { ...g, isLocked: !g.isLocked } : g))
     );
     playAudio.click(isAudioMuted);
-  };
+  }, [isAudioMuted]);
 
-  const triggerRandomLifeEvent = () => {
+  const triggerRandomLifeEvent = useCallback(() => {
     const unresolved = lifeEvents.filter((e) => !e.resolvedChoiceId);
     if (unresolved.length === 0) {
       // Re-arm events pool with fresh IDs
@@ -279,9 +279,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setActiveLifeEvent(randomEv);
     }
     playAudio.dice(isAudioMuted);
-  };
+  }, [lifeEvents, isAudioMuted]);
 
-  const resolveLifeEvent = (eventId: string, choiceId: string) => {
+  const resolveLifeEvent = useCallback((eventId: string, choiceId: string) => {
     const ev = lifeEvents.find((e) => e.id === eventId);
     if (!ev) return;
     const choice = ev.choices.find((c) => c.id === choiceId);
@@ -319,13 +319,13 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } else {
       playAudio.coin(isAudioMuted);
     }
-  };
+  }, [lifeEvents, currentDay, isAudioMuted]);
 
-  const dismissLifeEvent = () => {
+  const dismissLifeEvent = useCallback(() => {
     setActiveLifeEvent(null);
-  };
+  }, []);
 
-  const switchProfile = (profileId: string) => {
+  const switchProfile = useCallback((profileId: string) => {
     const found = USER_PROFILES.find((p) => p.id === profileId);
     if (!found) return;
     setProfile(found);
@@ -335,13 +335,13 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setTransactions(INITIAL_DEMO_TRANSACTIONS);
     setHasFinishedMonth(false);
     playAudio.coin(isAudioMuted);
-  };
+  }, [isAudioMuted]);
 
-  const toggleAudio = () => {
+  const toggleAudio = useCallback(() => {
     setIsAudioMuted((prev) => !prev);
-  };
+  }, []);
 
-  const toggleAusterityMode = () => {
+  const toggleAusterityMode = useCallback(() => {
     setIsAusterityMode((prev) => {
       const next = !prev;
       if (next) {
@@ -361,9 +361,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
       return next;
     });
-  };
+  }, [isAudioMuted]);
 
-  const resetAll = () => {
+  const resetAll = useCallback(() => {
     setCurrentDay(1);
     setCommitments(profile.initialCommitments);
     setSavingsGoals(profile.initialSavingsGoals);
@@ -374,9 +374,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setHasFinishedMonth(false);
     setIsAusterityMode(false);
     playAudio.coin(isAudioMuted);
-  };
+  }, [profile, isAudioMuted]);
 
-  const commitSimulation = (draft: SimulationDraft) => {
+  const commitSimulation = useCallback((draft: SimulationDraft) => {
     addTransaction({
       title: draft.title,
       amount: draft.amount,
@@ -388,51 +388,86 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
     setActiveSimulation(null);
     playAudio.coin(isAudioMuted);
-  };
+  }, [addTransaction, currentDay, isAudioMuted]);
 
-  const closeMonthEndReport = () => {
+  const closeMonthEndReport = useCallback(() => {
     setHasFinishedMonth(false);
-  };
+  }, []);
+
+  const contextValue = useMemo(() => ({
+    profile,
+    currentDay,
+    transactions,
+    commitments,
+    savingsGoals,
+    lifeEvents,
+    activeLifeEvent,
+    activeSimulation,
+    isAudioMuted,
+    hasFinishedMonth,
+    isAusterityMode,
+    summary,
+    runwayTrajectory,
+    advanceDay,
+    setDay,
+    toggleAusterityMode,
+    addTransaction,
+    deleteTransaction,
+    toggleCommitmentPaid,
+    skipCommitment,
+    addCommitment,
+    addSavingsGoal,
+    depositToSavings,
+    withdrawFromSavings,
+    toggleGoalLock,
+    triggerRandomLifeEvent,
+    resolveLifeEvent,
+    dismissLifeEvent,
+    switchProfile,
+    toggleAudio,
+    resetAll,
+    setActiveSimulation,
+    commitSimulation,
+    closeMonthEndReport
+  }), [
+    profile,
+    currentDay,
+    transactions,
+    commitments,
+    savingsGoals,
+    lifeEvents,
+    activeLifeEvent,
+    activeSimulation,
+    isAudioMuted,
+    hasFinishedMonth,
+    isAusterityMode,
+    summary,
+    runwayTrajectory,
+    advanceDay,
+    setDay,
+    toggleAusterityMode,
+    addTransaction,
+    deleteTransaction,
+    toggleCommitmentPaid,
+    skipCommitment,
+    addCommitment,
+    addSavingsGoal,
+    depositToSavings,
+    withdrawFromSavings,
+    toggleGoalLock,
+    triggerRandomLifeEvent,
+    resolveLifeEvent,
+    dismissLifeEvent,
+    switchProfile,
+    toggleAudio,
+    resetAll,
+    setActiveSimulation,
+    commitSimulation,
+    closeMonthEndReport
+  ]);
 
   return (
-    <FinanceContext.Provider
-      value={{
-        profile,
-        currentDay,
-        transactions,
-        commitments,
-        savingsGoals,
-        lifeEvents,
-        activeLifeEvent,
-        activeSimulation,
-        isAudioMuted,
-        hasFinishedMonth,
-        isAusterityMode,
-        summary,
-        runwayTrajectory,
-        advanceDay,
-        setDay,
-        toggleAusterityMode,
-        addTransaction,
-        deleteTransaction,
-        toggleCommitmentPaid,
-        skipCommitment,
-        addCommitment,
-        addSavingsGoal,
-        depositToSavings,
-        withdrawFromSavings,
-        toggleGoalLock,
-        triggerRandomLifeEvent,
-        resolveLifeEvent,
-        dismissLifeEvent,
-        switchProfile,
-        toggleAudio,
-        resetAll,
-        setActiveSimulation,
-        commitSimulation,
-        closeMonthEndReport
-      }}
-    >
+    <FinanceContext.Provider value={contextValue}>
       {children}
     </FinanceContext.Provider>
   );

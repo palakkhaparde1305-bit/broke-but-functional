@@ -107,7 +107,18 @@ export const DashboardHUD: React.FC<DashboardHUDProps> = ({
 
           <div className="flex items-center justify-between text-xs text-slate-400 border-t border-slate-800/80 pt-2.5 mt-2">
             <span>{summary.remainingDays} days remaining</span>
-            <span className="text-lime-400/90 text-[11px] font-medium">Safe to spend</span>
+            <span
+              title={`Average burn is ₹${summary.averageDailyBurn}/day compared to safe limit of ₹${summary.safeDailyAllowance}/day`}
+              className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                summary.averageDailyBurn > summary.safeDailyAllowance
+                  ? 'bg-rose-500/10 text-rose-300 border-rose-500/30'
+                  : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+              }`}
+            >
+              {summary.averageDailyBurn > summary.safeDailyAllowance
+                ? `🔥 ₹${summary.averageDailyBurn}/d Burn (Over)`
+                : `🛡️ ₹${summary.averageDailyBurn}/d Burn (Optimal)`}
+            </span>
           </div>
 
           <div className="absolute top-0 right-0 w-24 h-24 bg-lime-400/10 rounded-full blur-2xl pointer-events-none" />
