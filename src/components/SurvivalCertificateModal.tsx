@@ -84,14 +84,30 @@ export const SurvivalCertificateModal: React.FC = () => {
     alert('Survival Report copied to clipboard! Share it with friends or on social media!');
   };
 
+  React.useEffect(() => {
+    if (!hasFinishedMonth) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closeMonthEndReport();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [hasFinishedMonth, closeMonthEndReport]);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="certificate-modal-title"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn"
+    >
       <div className="bg-slate-950 border border-lime-400/40 rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl relative shadow-lime-400/10">
         {/* Close Button */}
         <button
           onClick={closeMonthEndReport}
           className="absolute right-5 top-5 text-slate-400 hover:text-white p-1 rounded-lg"
-          aria-label="Close Certificate"
+          aria-label="Close Certificate Dialog"
         >
           <X className="w-5 h-5" />
         </button>
@@ -103,9 +119,9 @@ export const SurvivalCertificateModal: React.FC = () => {
           </div>
 
           <span className="text-[11px] font-bold uppercase tracking-widest text-lime-400 block mb-1">
-            Official 30-Day Completion Badge
+            Official 30-Day Completion Badge (Press Esc to close)
           </span>
-          <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight mb-1">
+          <h2 id="certificate-modal-title" className="text-2xl sm:text-3xl font-black text-white tracking-tight mb-1">
             {verdict.title}
           </h2>
           <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-lime-400/10 text-lime-300 border border-lime-400/30 mb-4">

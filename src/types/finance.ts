@@ -123,3 +123,12 @@ export interface UserProfile {
   initialSavingsGoals: SavingsGoal[];
   avatar: string;
 }
+
+export interface BudgetBreakdown {
+  fixedNeeds: number;
+  discretionaryWants: number;
+  lockedSavings: number;
+  liquidAvailable: number;
+  totalAllocated: number;
+}
+

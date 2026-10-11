@@ -5,10 +5,26 @@ import { Dices, AlertCircle, Sparkles, X, ArrowRight, ShieldCheck } from 'lucide
 export const LifeEventsModal: React.FC = () => {
   const { activeLifeEvent, resolveLifeEvent, dismissLifeEvent } = useFinance();
 
+  React.useEffect(() => {
+    if (!activeLifeEvent) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        dismissLifeEvent();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeLifeEvent, dismissLifeEvent]);
+
   if (!activeLifeEvent) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="life-event-title"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn"
+    >
       <div className="bg-slate-950 border border-purple-500/40 rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl relative shadow-purple-500/10">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-5">
@@ -18,9 +34,9 @@ export const LifeEventsModal: React.FC = () => {
             </div>
             <div>
               <span className="text-[11px] font-bold uppercase tracking-wider text-purple-400 block">
-                {activeLifeEvent.category} • Vibe Roulette
+                {activeLifeEvent.category} • Vibe Roulette (Press Esc to close)
               </span>
-              <h3 className="text-lg font-black text-white tracking-tight">
+              <h3 id="life-event-title" className="text-lg font-black text-white tracking-tight">
                 {activeLifeEvent.title}
               </h3>
             </div>

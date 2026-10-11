@@ -42,13 +42,24 @@ export const CommitmentsManager: React.FC = () => {
   const [newCategory, setNewCategory] = useState<TransactionCategory>('utilities');
   const [newEssential, setNewEssential] = useState(true);
 
+  React.useEffect(() => {
+    if (!isAddModalOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsAddModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isAddModalOpen]);
+
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim() || newAmount <= 0) return;
 
     addCommitment({
       title: newTitle.trim(),
-      amount: newAmount,
+      amount: Math.max(1, Math.min(50000, newAmount)),
       dueDay: Math.min(30, Math.max(1, newDueDay)),
       category: newCategory,
       status: 'pending',
@@ -64,13 +75,13 @@ export const CommitmentsManager: React.FC = () => {
   };
 
   return (
-    <section className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-xl mb-8">
+    <section aria-labelledby="commitments-heading" className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-xl mb-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-slate-800 mb-5">
         <div>
           <div className="flex items-center gap-2">
             <CalendarDays className="w-5 h-5 text-purple-400" />
-            <h3 className="text-lg font-bold text-white tracking-tight">
+            <h3 id="commitments-heading" className="text-lg font-bold text-white tracking-tight">
               Commitments &amp; Subscriptions
             </h3>
             <span className="text-xs px-2 py-0.5 rounded-full bg-purple-400/10 text-purple-300 border border-purple-400/20 font-mono">
@@ -84,6 +95,7 @@ export const CommitmentsManager: React.FC = () => {
 
         <button
           onClick={() => setIsAddModalOpen(true)}
+          aria-label="Add New Scheduled Commitment"
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors"
         >
           <Plus className="w-3.5 h-3.5 text-lime-400" />
@@ -195,14 +207,20 @@ export const CommitmentsManager: React.FC = () => {
 
       {/* Add Commitment Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="add-comm-modal-title"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn"
+        >
           <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Plus className="w-4 h-4 text-lime-400" /> Add Scheduled Commitment
+              <h3 id="add-comm-modal-title" className="text-base font-bold text-white flex items-center gap-2">
+                <Plus className="w-4 h-4 text-lime-400" /> Add Scheduled Commitment (Press Esc to close)
               </h3>
               <button
                 onClick={() => setIsAddModalOpen(false)}
+                aria-label="Close Add Commitment Dialog"
                 className="text-slate-400 hover:text-white"
               >
                 <X className="w-4 h-4" />
@@ -211,10 +229,14 @@ export const CommitmentsManager: React.FC = () => {
 
             <form onSubmit={handleAddSubmit} className="space-y-4 text-xs">
               <div>
-                <label className="text-slate-300 font-semibold block mb-1">Bill / Subscription Title</label>
+                <label htmlFor="comm-input-title" className="text-slate-300 font-semibold block mb-1">
+                  Bill / Subscription Title
+                </label>
                 <input
+                  id="comm-input-title"
                   type="text"
                   required
+                  maxLength={80}
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                   placeholder="e.g. Netflix Split, Gym Pass"
@@ -224,33 +246,43 @@ export const CommitmentsManager: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-300 font-semibold block mb-1">Amount (₹)</label>
+                  <label htmlFor="comm-input-amount" className="text-slate-300 font-semibold block mb-1">
+                    Amount (₹)
+                  </label>
                   <input
+                    id="comm-input-amount"
                     type="number"
                     min="1"
+                    max="50000"
                     required
                     value={newAmount}
-                    onChange={(e) => setNewAmount(Number(e.target.value))}
+                    onChange={(e) => setNewAmount(Math.max(1, Math.min(50000, Number(e.target.value) || 1)))}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:ring-1 focus:ring-lime-400"
                   />
                 </div>
                 <div>
-                  <label className="text-slate-300 font-semibold block mb-1">Due Day (1-30)</label>
+                  <label htmlFor="comm-input-dueday" className="text-slate-300 font-semibold block mb-1">
+                    Due Day (1-30)
+                  </label>
                   <input
+                    id="comm-input-dueday"
                     type="number"
                     min="1"
                     max="30"
                     required
                     value={newDueDay}
-                    onChange={(e) => setNewDueDay(Number(e.target.value))}
+                    onChange={(e) => setNewDueDay(Math.min(30, Math.max(1, Number(e.target.value) || 1)))}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:ring-1 focus:ring-lime-400"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-slate-300 font-semibold block mb-1">Category</label>
+                <label htmlFor="comm-input-category" className="text-slate-300 font-semibold block mb-1">
+                  Category
+                </label>
                 <select
+                  id="comm-input-category"
                   value={newCategory}
                   onChange={(e) => setNewCategory(e.target.value as TransactionCategory)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-lime-400"

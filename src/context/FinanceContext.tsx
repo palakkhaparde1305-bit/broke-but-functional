@@ -31,10 +31,12 @@ interface FinanceContextType {
   activeSimulation: SimulationDraft | null;
   isAudioMuted: boolean;
   hasFinishedMonth: boolean;
+  isAusterityMode: boolean;
   summary: FinanceSummary;
   runwayTrajectory: { day: number; actual?: number; projected: number; ideal: number }[];
   advanceDay: () => void;
   setDay: (day: number) => void;
+  toggleAusterityMode: () => void;
   addTransaction: (tx: Omit<Transaction, 'id' | 'timestamp'>) => void;
   deleteTransaction: (id: string) => void;
   toggleCommitmentPaid: (id: string) => void;
@@ -93,6 +95,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [activeSimulation, setActiveSimulation] = useState<SimulationDraft | null>(null);
   const [isAudioMuted, setIsAudioMuted] = useState<boolean>(false);
   const [hasFinishedMonth, setHasFinishedMonth] = useState<boolean>(false);
+  const [isAusterityMode, setIsAusterityMode] = useState<boolean>(false);
 
   // Compute live summary
   const summary = useMemo(() => {
@@ -338,6 +341,28 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setIsAudioMuted((prev) => !prev);
   };
 
+  const toggleAusterityMode = () => {
+    setIsAusterityMode((prev) => {
+      const next = !prev;
+      if (next) {
+        setCommitments((cList) =>
+          cList.map((c) =>
+            !c.isEssential && c.status === 'pending' ? { ...c, status: 'skipped' } : c
+          )
+        );
+        playAudio.warning(isAudioMuted);
+      } else {
+        setCommitments((cList) =>
+          cList.map((c) =>
+            !c.isEssential && c.status === 'skipped' ? { ...c, status: 'pending' } : c
+          )
+        );
+        playAudio.coin(isAudioMuted);
+      }
+      return next;
+    });
+  };
+
   const resetAll = () => {
     setCurrentDay(1);
     setCommitments(profile.initialCommitments);
@@ -347,6 +372,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setActiveLifeEvent(null);
     setActiveSimulation(null);
     setHasFinishedMonth(false);
+    setIsAusterityMode(false);
     playAudio.coin(isAudioMuted);
   };
 
@@ -381,10 +407,12 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         activeSimulation,
         isAudioMuted,
         hasFinishedMonth,
+        isAusterityMode,
         summary,
         runwayTrajectory,
         advanceDay,
         setDay,
+        toggleAusterityMode,
         addTransaction,
         deleteTransaction,
         toggleCommitmentPaid,

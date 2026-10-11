@@ -36,6 +36,18 @@ export const SavingsLockbox: React.FC = () => {
   const [goalTarget, setGoalTarget] = useState<number>(1000);
   const [goalEmoji, setGoalEmoji] = useState('🎯');
 
+  React.useEffect(() => {
+    if (!activeGoalModal && !isAddGoalModalOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setActiveGoalModal(null);
+        setIsAddGoalModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeGoalModal, isAddGoalModalOpen]);
+
   const handleTransferSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeGoalModal || amountInput <= 0) return;
@@ -56,7 +68,7 @@ export const SavingsLockbox: React.FC = () => {
 
     addSavingsGoal({
       title: goalTitle.trim(),
-      targetAmount: goalTarget,
+      targetAmount: Math.max(100, Math.min(50000, goalTarget)),
       isLocked: true,
       deadlineDay: 30,
       emoji: goalEmoji || '🎯',
@@ -180,14 +192,21 @@ export const SavingsLockbox: React.FC = () => {
 
       {/* Transfer Modal */}
       {activeGoalModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="transfer-modal-title"
+        >
           <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-sm w-full p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold text-white">
+              <h3 id="transfer-modal-title" className="text-base font-bold text-white">
                 {activeGoalModal.type === 'deposit' ? 'Deposit to Vault' : 'Withdraw from Vault'}
               </h3>
               <button
+                type="button"
                 onClick={() => setActiveGoalModal(null)}
+                aria-label="Close transfer modal"
                 className="text-slate-400 hover:text-white"
               >
                 <X className="w-4 h-4" />
@@ -202,8 +221,9 @@ export const SavingsLockbox: React.FC = () => {
 
             <form onSubmit={handleTransferSubmit} className="space-y-4 text-xs">
               <div>
-                <label className="text-slate-300 font-semibold block mb-1">Amount (₹)</label>
+                <label htmlFor="transfer-amount" className="text-slate-300 font-semibold block mb-1">Amount (₹)</label>
                 <input
+                  id="transfer-amount"
                   type="number"
                   min="1"
                   max={
@@ -240,14 +260,21 @@ export const SavingsLockbox: React.FC = () => {
 
       {/* Add New Vault Modal */}
       {isAddGoalModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="add-vault-modal-title"
+        >
           <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-sm w-full p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <h3 id="add-vault-modal-title" className="text-base font-bold text-white flex items-center gap-2">
                 <Target className="w-4 h-4 text-emerald-400" /> New Savings Target
               </h3>
               <button
+                type="button"
                 onClick={() => setIsAddGoalModalOpen(false)}
+                aria-label="Close create vault modal"
                 className="text-slate-400 hover:text-white"
               >
                 <X className="w-4 h-4" />
@@ -256,8 +283,9 @@ export const SavingsLockbox: React.FC = () => {
 
             <form onSubmit={handleCreateGoal} className="space-y-4 text-xs">
               <div>
-                <label className="text-slate-300 font-semibold block mb-1">Goal Name</label>
+                <label htmlFor="vault-goal-title" className="text-slate-300 font-semibold block mb-1">Goal Name</label>
                 <input
+                  id="vault-goal-title"
                   type="text"
                   required
                   value={goalTitle}
@@ -269,8 +297,9 @@ export const SavingsLockbox: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-300 font-semibold block mb-1">Target (₹)</label>
+                  <label htmlFor="vault-goal-target" className="text-slate-300 font-semibold block mb-1">Target (₹)</label>
                   <input
+                    id="vault-goal-target"
                     type="number"
                     min="100"
                     required
@@ -280,8 +309,9 @@ export const SavingsLockbox: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="text-slate-300 font-semibold block mb-1">Emoji Icon</label>
+                  <label htmlFor="vault-goal-emoji" className="text-slate-300 font-semibold block mb-1">Emoji Icon</label>
                   <input
+                    id="vault-goal-emoji"
                     type="text"
                     value={goalEmoji}
                     onChange={(e) => setGoalEmoji(e.target.value)}

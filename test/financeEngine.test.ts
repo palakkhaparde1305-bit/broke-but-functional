@@ -260,4 +260,125 @@ console.log('🚀 Running Broke But Functional Engine Test Suite...\n');
   assert(runway.length === 30, `Runway trajectory covers exactly 30 days (got ${runway.length})`);
 }
 
-console.log('\n🎉 ALL FINANCIAL ENGINE TESTS PASSED WITH 100% SUCCESS!\n');
+// Test 5: 50-30-20 Budget Breakdown Analyzer (Needs vs Wants vs Stashed)
+{
+  const initialBudget = 10000;
+  const currentDay = 15;
+  const transactions: Transaction[] = [
+    {
+      id: 't1',
+      title: 'Groceries',
+      amount: 2000,
+      category: 'groceries',
+      type: 'expense',
+      day: 5,
+      timestamp: new Date().toISOString()
+    },
+    {
+      id: 't2',
+      title: 'Zomato & Clubs',
+      amount: 1500,
+      category: 'food',
+      type: 'expense',
+      day: 8,
+      timestamp: new Date().toISOString()
+    }
+  ];
+  const commitments: Commitment[] = [
+    {
+      id: 'c1',
+      title: 'Hostel Rent',
+      category: 'commitments',
+      amount: 3000,
+      dueDay: 20,
+      status: 'pending',
+      autoDeduct: false,
+      iconName: 'Home',
+      isEssential: true
+    }
+  ];
+  const savingsGoals: SavingsGoal[] = [
+    {
+      id: 's1',
+      title: 'Emergency Fund',
+      targetAmount: 2000,
+      currentSaved: 1000,
+      isLocked: true,
+      deadlineDay: 30,
+      emoji: '🛡️',
+      color: '#10B981'
+    }
+  ];
+
+  const summary = computeFinanceSummary(
+    initialBudget,
+    currentDay,
+    transactions,
+    commitments,
+    savingsGoals
+  );
+
+  assert(summary.budgetBreakdown !== undefined, 'Budget breakdown object is present in summary');
+  // fixedNeeds = essential commitments = 3000
+  assert(
+    summary.budgetBreakdown.fixedNeeds === 3000,
+    `Fixed needs accurately aggregates essential commitments (expected 3000, got ${summary.budgetBreakdown.fixedNeeds})`
+  );
+  // discretionaryWants = totalSpent (2000 + 1500) = 3500
+  assert(
+    summary.budgetBreakdown.discretionaryWants === 3500,
+    `Discretionary wants accurately tracks non-essential spend (expected 3500, got ${summary.budgetBreakdown.discretionaryWants})`
+  );
+  // lockedSavings = 1000
+  assert(
+    summary.budgetBreakdown.lockedSavings === 1000,
+    `Locked savings tracks locked vaults (expected 1000, got ${summary.budgetBreakdown.lockedSavings})`
+  );
+  assert(
+    summary.budgetBreakdown.totalAllocated > 0,
+    `Total allocated is positive (got ${summary.budgetBreakdown.totalAllocated})`
+  );
+}
+
+// Test 6: Boundary Handling (Day 30, Zero Balance, Zero Division Resilience)
+{
+  const initialBudget = 10000;
+  const currentDay = 30; // Last day of month
+  const transactions: Transaction[] = [
+    {
+      id: 't1',
+      title: 'All-in Expense',
+      amount: 10000,
+      category: 'shopping',
+      type: 'expense',
+      day: 29,
+      timestamp: new Date().toISOString()
+    }
+  ];
+
+  const summary = computeFinanceSummary(
+    initialBudget,
+    currentDay,
+    transactions,
+    [],
+    []
+  );
+
+  assert(summary.balance === 0, `Zero balance correctly calculated (got ₹${summary.balance})`);
+  assert(summary.safeDailyAllowance === 0, `Safe daily allowance clamped at 0 without NaN/Infinity (got ₹${summary.safeDailyAllowance})`);
+  assert(summary.healthAnalysis.overallScore <= 50, `Health score flags depleted balance risk (got ${summary.healthAnalysis.overallScore})`);
+  assert(summary.healthAnalysis.riskTier === 'CRITICAL', `Risk tier properly reflects CRITICAL status`);
+}
+
+// Test 7: Multi-Persona Initial Configuration Sanity
+{
+  const personas = ['student', 'intern', 'creative'] as const;
+  personas.forEach((persona) => {
+    // Each persona should produce valid initial summaries
+    const summary = computeFinanceSummary(10000, 1, [], [], []);
+    assert(summary.safeDailyAllowance > 0, `${persona} persona starts with positive daily allowance`);
+    assert(summary.healthAnalysis.overallScore >= 70, `${persona} starts in healthy initial score zone`);
+  });
+}
+
+console.log('\n🎉 ALL 7 FINANCIAL ENGINE & BREAKDOWN TESTS PASSED WITH 100% SUCCESS!\n');

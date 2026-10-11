@@ -107,10 +107,26 @@ export const DecisionSimulator: React.FC<DecisionSimulatorProps> = ({ isOpen, on
     onClose();
   };
 
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md overflow-y-auto animate-fadeIn">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="simulator-modal-title"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md overflow-y-auto animate-fadeIn"
+    >
       <div className="bg-slate-950 border border-slate-800 rounded-3xl max-w-4xl w-full p-5 sm:p-7 shadow-2xl relative my-auto max-h-[95vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-6">
@@ -119,17 +135,17 @@ export const DecisionSimulator: React.FC<DecisionSimulatorProps> = ({ isOpen, on
               <Sparkles className="w-5 h-5 fill-lime-400" />
             </div>
             <div>
-              <h2 className="text-xl font-black text-white tracking-tight flex items-center gap-2">
+              <h2 id="simulator-modal-title" className="text-xl font-black text-white tracking-tight flex items-center gap-2">
                 "What If?" Pre-Decision Simulator
               </h2>
               <p className="text-xs text-slate-400">
-                Simulate the interconnected ripple effects on your ₹10,000 budget before spending a single rupee.
+                Simulate the interconnected ripple effects on your ₹10,000 budget before spending a single rupee. (Press Esc to close)
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            aria-label="Close Simulator"
+            aria-label="Close Simulator Dialog"
             className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
           >
             <X className="w-5 h-5" />
@@ -161,9 +177,13 @@ export const DecisionSimulator: React.FC<DecisionSimulatorProps> = ({ isOpen, on
         {/* Input Parameters Grid */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6 bg-slate-900/60 p-4 rounded-2xl border border-slate-800/80">
           <div className="md:col-span-6 flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-slate-300">Decision Title</label>
+            <label htmlFor="sim-decision-title" className="text-xs font-semibold text-slate-300">
+              Decision Title
+            </label>
             <input
+              id="sim-decision-title"
               type="text"
+              maxLength={100}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Swiggy Late Night, Sneaker Sale"
@@ -172,12 +192,16 @@ export const DecisionSimulator: React.FC<DecisionSimulatorProps> = ({ isOpen, on
           </div>
 
           <div className="md:col-span-3 flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-slate-300">Amount (₹)</label>
+            <label htmlFor="sim-decision-amount" className="text-xs font-semibold text-slate-300">
+              Amount (₹)
+            </label>
             <input
+              id="sim-decision-amount"
               type="number"
               min="0"
+              max="50000"
               value={amount}
-              onChange={(e) => setAmount(Number(e.target.value))}
+              onChange={(e) => setAmount(Math.max(0, Math.min(50000, Number(e.target.value) || 0)))}
               className="bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-white font-mono focus:outline-none focus:ring-2 focus:ring-lime-400/50"
             />
           </div>

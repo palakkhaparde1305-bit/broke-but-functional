@@ -29,6 +29,17 @@ export const DashboardHUD: React.FC<DashboardHUDProps> = ({
   const isBroke = summary.balance <= 0;
   const isDanger = summary.healthAnalysis.riskTier === 'CRITICAL' || summary.healthAnalysis.riskTier === 'DANGER';
 
+  React.useEffect(() => {
+    if (!showFormulaModal) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowFormulaModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showFormulaModal]);
+
   return (
     <div className="space-y-6 mb-8">
       {/* 4 Connected Cockpit Cards */}
@@ -189,10 +200,15 @@ export const DashboardHUD: React.FC<DashboardHUDProps> = ({
 
       {/* Formula Explanation Modal */}
       {showFormulaModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="formula-modal-title"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn"
+        >
           <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative">
-            <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
-              <Coins className="w-5 h-5 text-lime-400" /> Safe Daily Allowance Formula
+            <h3 id="formula-modal-title" className="text-lg font-bold text-white mb-2 flex items-center gap-2">
+              <Coins className="w-5 h-5 text-lime-400" /> Safe Daily Allowance Formula (Press Esc to close)
             </h3>
             <p className="text-xs text-slate-400 mb-4">
               Traditional apps tell you what you spent yesterday. Our dynamic formula tells you exactly what you can safely spend today without defaulting on rent or going broke on Day 30.

@@ -31,6 +31,17 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [category, setCategory] = useState<TransactionCategory>('food');
   const [vibeNote, setVibeNote] = useState('');
 
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -39,7 +50,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
     addTransaction({
       title: title.trim(),
-      amount,
+      amount: Math.max(1, Math.min(50000, amount)),
       category,
       type,
       day: currentDay,
@@ -58,7 +69,12 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="add-tx-modal-title"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn"
+    >
       <div className="bg-slate-950 border border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl relative">
         <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-5">
           <div className="flex items-center gap-2.5">
@@ -72,15 +88,15 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               {type === 'expense' ? <TrendingDown className="w-5 h-5" /> : <TrendingUp className="w-5 h-5" />}
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white tracking-tight">
+              <h3 id="add-tx-modal-title" className="text-lg font-bold text-white tracking-tight">
                 {type === 'expense' ? 'Record Expense' : 'Log Extra Income'}
               </h3>
-              <p className="text-xs text-slate-400">Recorded on Day {currentDay} of 30</p>
+              <p className="text-xs text-slate-400">Recorded on Day {currentDay} of 30 (Press Esc to close)</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            aria-label="Close Modal"
+            aria-label="Close Modal Dialog"
             className="text-slate-400 hover:text-white p-1 rounded-lg"
           >
             <X className="w-5 h-5" />
@@ -134,10 +150,12 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           </div>
 
           <div>
-            <label className="text-slate-300 font-semibold block mb-1">Title / Description</label>
+            <label htmlFor="tx-input-title" className="text-slate-300 font-semibold block mb-1">Title / Description</label>
             <input
+              id="tx-input-title"
               type="text"
               required
+              maxLength={80}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Chai, Metro, Freelance Gig"
@@ -147,20 +165,23 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-slate-300 font-semibold block mb-1">Amount (₹)</label>
+              <label htmlFor="tx-input-amount" className="text-slate-300 font-semibold block mb-1">Amount (₹)</label>
               <input
+                id="tx-input-amount"
                 type="number"
                 min="1"
+                max="50000"
                 required
                 value={amount}
-                onChange={(e) => setAmount(Number(e.target.value))}
+                onChange={(e) => setAmount(Math.max(1, Math.min(50000, Number(e.target.value) || 1)))}
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm font-mono text-white focus:outline-none focus:ring-1 focus:ring-lime-400"
               />
             </div>
 
             <div>
-              <label className="text-slate-300 font-semibold block mb-1">Category</label>
+              <label htmlFor="tx-input-category" className="text-slate-300 font-semibold block mb-1">Category</label>
               <select
+                id="tx-input-category"
                 value={category}
                 onChange={(e) => setCategory(e.target.value as TransactionCategory)}
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-lime-400"
@@ -177,9 +198,11 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           </div>
 
           <div>
-            <label className="text-slate-300 font-semibold block mb-1">Vibe Note (Optional)</label>
+            <label htmlFor="tx-input-vibenote" className="text-slate-300 font-semibold block mb-1">Vibe Note (Optional)</label>
             <input
+              id="tx-input-vibenote"
               type="text"
+              maxLength={120}
               value={vibeNote}
               onChange={(e) => setVibeNote(e.target.value)}
               placeholder="e.g. Campus celebration, study snack"

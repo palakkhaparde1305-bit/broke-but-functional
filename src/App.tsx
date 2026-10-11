@@ -12,6 +12,7 @@ import { LifeEventsModal } from './components/LifeEventsModal';
 import { AddTransactionModal } from './components/AddTransactionModal';
 import { TransactionHistory } from './components/TransactionHistory';
 import { SurvivalCertificateModal } from './components/SurvivalCertificateModal';
+import { BudgetBreakdownCard } from './components/BudgetBreakdownCard';
 import { Sparkles, Trophy, HelpCircle, ShieldCheck } from 'lucide-react';
 
 const DashboardContent: React.FC = () => {
@@ -22,7 +23,7 @@ const DashboardContent: React.FC = () => {
   const [isSimulatorOpen, setIsSimulatorOpen] = useState(isPreviewSim);
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
   const [isAddIncomeOpen, setIsAddIncomeOpen] = useState(false);
-  const { summary, triggerRandomLifeEvent, setDay } = useFinance();
+  const { summary, triggerRandomLifeEvent, setDay, advanceDay } = useFinance();
 
   React.useEffect(() => {
     if (isPreviewRoulette) {
@@ -33,13 +34,46 @@ const DashboardContent: React.FC = () => {
     }
   }, [isPreviewRoulette, isPreviewCert]);
 
+  // Global Keyboard Navigation Shortcuts
+  React.useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const activeTag = (document.activeElement as HTMLElement)?.tagName;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(activeTag)) return;
+
+      if (e.key === 's' || e.key === 'S') {
+        e.preventDefault();
+        setIsSimulatorOpen((prev) => !prev);
+      } else if (e.key === 'e' || e.key === 'E') {
+        e.preventDefault();
+        setIsAddExpenseOpen(true);
+      } else if (e.key === 'i' || e.key === 'I') {
+        e.preventDefault();
+        setIsAddIncomeOpen(true);
+      } else if (e.key === 'n' || e.key === 'N') {
+        e.preventDefault();
+        advanceDay();
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [advanceDay]);
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-lime-400 selection:text-slate-950">
+      {/* WCAG Skip Link */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:bg-lime-400 focus:text-slate-950 focus:font-bold focus:rounded-xl focus:shadow-lg focus:outline-none"
+      >
+        Skip to main content
+      </a>
+
       {/* Navbar */}
       <Navbar />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <main id="main-content" tabIndex={-1} className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 outline-none">
         {/* Time Machine & Day Controller */}
         <DayController />
 
@@ -55,6 +89,9 @@ const DashboardContent: React.FC = () => {
 
         {/* Financial Health & Risk Radar Breakdown */}
         <HealthScoreCard />
+
+        {/* 50-30-20 Needs vs Wants Budget Allocation & Panic Austerity Switch */}
+        <BudgetBreakdownCard />
 
         {/* Split Grid: Commitments Manager & Savings Lockbox */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">

@@ -24,6 +24,13 @@ export interface FinanceSummary {
   averageDailyBurn: number;
   projectedBrokeDay?: number;
   healthAnalysis: HealthScoreAnalysis;
+  budgetBreakdown: {
+    fixedNeeds: number;
+    discretionaryWants: number;
+    lockedSavings: number;
+    liquidAvailable: number;
+    totalAllocated: number;
+  };
 }
 
 export function computeFinanceSummary(
@@ -112,6 +119,32 @@ export function computeFinanceSummary(
     currentDay
   );
 
+  // Budget Breakdown: Needs vs Wants vs Savings vs Spending Buffer
+  let fixedNeeds = 0;
+  let discretionaryCommitments = 0;
+  for (const c of commitments) {
+    if (c.status !== 'skipped') {
+      if (c.isEssential) {
+        fixedNeeds += c.amount;
+      } else {
+        discretionaryCommitments += c.amount;
+      }
+    }
+  }
+
+  const discretionaryExpenses = totalSpent;
+  const discretionaryWants = discretionaryCommitments + discretionaryExpenses;
+  const liquidAvailable = Math.max(0, balance - totalCommittedUpcoming);
+  const totalAllocated = fixedNeeds + discretionaryWants + totalLockedSavings + liquidAvailable;
+
+  const budgetBreakdown = {
+    fixedNeeds,
+    discretionaryWants,
+    lockedSavings: totalLockedSavings,
+    liquidAvailable,
+    totalAllocated
+  };
+
   return {
     currentDay,
     initialBudget,
@@ -126,7 +159,8 @@ export function computeFinanceSummary(
     remainingDays,
     averageDailyBurn,
     projectedBrokeDay,
-    healthAnalysis
+    healthAnalysis,
+    budgetBreakdown
   };
 }
 
